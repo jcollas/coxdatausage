@@ -1,12 +1,12 @@
 # Custom Component Cox Data Usage
 This is a custom_component for Home Assistant to create a sensor for data usage on Cox
 
-You must add this to your `custom_components` folder with the directory and file structure provided!
+### Installation
 
-Cox Data Usage Sensor
+Copy this folder to `<config_dir>/custom_components/coxdatausage/`.
 
-Example config:
-```
+Add the following to your `configuration.yaml` file:
+```yaml
 - platform: Cox
   name: Cox Data Usage
   username: !secret cox_username
