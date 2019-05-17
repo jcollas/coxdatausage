@@ -1,0 +1,8 @@
+{
+    "domain": "coxdatausage",
+    "name": "Cox Data Usage Sensor",
+    "documentation": "https://github.com/ShoGinn/coxdatausage/",
+    "dependencies": [],
+    "codeowners": ["ShoGinn"],
+    "requirements": []
+}
