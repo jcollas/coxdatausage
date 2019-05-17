@@ -1,5 +1,5 @@
 """
-Cox Date Usage Sensor
+Cox Data Usage Sensor
 
 Example config:
 
