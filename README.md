@@ -3,7 +3,7 @@ This is a custom_component for Home Assistant to create a sensor for data usage 
 
 ### Installation
 
-Copy this folder to `<config_dir>/custom_components/coxdatausage/`.
+Copy the folder `coxdatausage/` folder to `<config_dir>/custom_components/`.
 
 Add the following to your `configuration.yaml` file:
 ```yaml
