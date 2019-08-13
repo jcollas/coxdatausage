@@ -148,7 +148,7 @@ class CoxDataUsage(Entity):
         limit = float(response_object['dumLimit'])
         days_left = float(response_object['dumDaysLeft'])
         utilization = response_object['dumUtilization']
-        current_avg_gb = round((usage/(days_in_month - days_left)), 2)
+        current_avg_gb = round((usage/max((days_in_month - days_left), 1)), 2)
         remaining_avg_gb = round((limit - usage) / days_left, 2)
 
         self._state = usage
