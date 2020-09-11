@@ -159,16 +159,14 @@ class CoxDataUsage(Entity):
 
     async def cox_login(self, username, password):
 
-        SCOPE = "openid%20internal" #okta-login.js from cox login page
+        SCOPE = "openid internal" #okta-login.js from cox login page
         HOST_NAME = "www.cox.com" #okta-login.js
         REDIRECT_URI = f"https://{HOST_NAME}/authres/code" #okta-login.js
         AJAX_URL = f"https://{HOST_NAME}/authres/getNonce?onsuccess=" #okta-login.js
         BASE_URL = 'https://cci-res.okta.com/' #okta-login.js
         CLIENT_ID = '0oa1iranfsovqR6MG0h8' #okta-login.js
-        ISSUER = 'https://cci-res.okta.com/oauth2/aus1jbzlxq0hRR6jG0h8' #okta-login.js
+        ISSUER = f"{BASE_URL}/oauth2/aus1jbzlxq0hRR6jG0h8" #okta-login.js
         ON_SUCCESS_URL = "https%3A%2F%2Fwww.cox.com%2Fresaccount%2Fhome.html" #okta-login.js
-        onSuccessUrl = ON_SUCCESS_URL
-        nonceURL="https://www.cox.com/authres/getNonce?onsuccess=https%3A%2F%2Fwww.cox.com%2Fresimyaccount%2Fhome.html"
 
 
         data = {
@@ -197,9 +195,18 @@ class CoxDataUsage(Entity):
 
         sessionToken = response.json()['sessionToken']
 
-        url= f"{ISSUER}/v1/authorize?client_id={CLIENT_ID}&nonce={nonceVal}&redirect_uri={REDIRECT_URI}&response_mode=query&response_type=code&sessionToken={sessionToken}&state=https%253A%252F%252Fwww.cox.com%252Fwebapi%252Fcdncache%252Fcookieset%253Fresource%253Dhttps%253A%252F%252Fwww.cox.com%252Fresaccount%252Fhome.cox&scope={SCOPE}"
+        params = {
+            'client_id': CLIENT_ID,
+            'nonce': nonceVal,
+            'redirect_uri': REDIRECT_URI,
+            'response_mode': 'query',
+            'response_type': 'code',
+            'sessionToken': sessionToken,
+            'state': 'https%3A%2F%2Fwww.cox.com%2Fwebapi%2Fcdncache%2Fcookieset%3Fresource%3Dhttps%3A%2F%2Fwww.cox.com%2Fresaccount%2Fhome.cox'
+            'scope': SCOPE
+        }
 
-        response = await CoxDataUsage.async_call_api(self._hass, self.session, url, allow_redirects=True)
+        response = await CoxDataUsage.async_call_api(self._hass, self.session, f"{ISSUER}/v1/authorize", params=params, allow_redirects=True)
         if response is None:
             return None
 
