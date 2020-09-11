@@ -122,7 +122,7 @@ class CoxDataUsage(Entity):
         self.session = session
 
         # perform the login
-        response = self.cox_login(self._username, self._password)
+        response = await self.cox_login(self._username, self._password)
         if response is None:
             return False
 
@@ -185,13 +185,13 @@ class CoxDataUsage(Entity):
             'Content-Type': 'application/json'
         }
 
-        response = await CoxDataUsage.async_call_api(self._hass, self.session, "{AJAX_URL}{ON_SUCCESS_URL}")
+        response = await CoxDataUsage.async_call_api(self._hass, self.session, f"{AJAX_URL}{ON_SUCCESS_URL}")
         if response is None:
             return None
 
         nonceVal = response.text
 
-        response = await CoxDataUsage.async_call_api(self._hass, self.session, f"{BASE_URL}/api/v1/authn", data)
+        response = await CoxDataUsage.async_call_api(self._hass, self.session, f"{BASE_URL}api/v1/authn", data=data, headers=headers)
         if response is None:
             return None
 
@@ -199,7 +199,7 @@ class CoxDataUsage(Entity):
 
         url= f"{ISSUER}/v1/authorize?client_id={CLIENT_ID}&nonce={nonceVal}&redirect_uri={REDIRECT_URI}&response_mode=query&response_type=code&sessionToken={sessionToken}&state=https%253A%252F%252Fwww.cox.com%252Fwebapi%252Fcdncache%252Fcookieset%253Fresource%253Dhttps%253A%252F%252Fwww.cox.com%252Fresaccount%252Fhome.cox&scope={SCOPE}"
 
-        response = await CoxDataUsage.async_call_api(self._hass, self.session, url)
+        response = await CoxDataUsage.async_call_api(self._hass, self.session, url, allow_redirects=True)
         if response is None:
             return None
 
@@ -207,13 +207,13 @@ class CoxDataUsage(Entity):
 
 
     @staticmethod
-    async def async_call_api(hass, session, url, data=None):
+    async def async_call_api(hass, session, url, **kwargs):
         """Calls the given api and returns the response data"""
         try:
-            if data is None:
-                response = await hass.loop.run_in_executor(None, partial(session.get, url, timeout=10,allow_redirects=True))
+            if kwargs.data is None:
+                response = await hass.loop.run_in_executor(None, partial(session.get, url, timeout=10, **kwargs))
             else:
-                response = await hass.loop.run_in_executor(None, partial(session.post, url, data=data, timeout=10))
+                response = await hass.loop.run_in_executor(None, partial(session.post, url, timeout=10, **kwargs))
         except (requests.exceptions.RequestException, ValueError):
             _LOGGER.warning(
                 'Request failed for url %s',
