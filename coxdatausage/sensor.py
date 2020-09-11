@@ -118,18 +118,11 @@ class CoxDataUsage(Entity):
 
         session = requests.session()
         session.verify = False
-        # fill out the login form
-        data = {
-            'onsuccess': 'https://www.cox.com/internet/mydatausage.cox',
-            'onfailure': 'ww2.cox.com/resaccount/sign-in.cox',
-            'targetFN': 'COX.net',
-            'emaildomain': '@cox.net',
-            'username': self._username,
-            'password': self._password,
-            'rememberme': 'true'
-        }
+
+        self.session = session
+
         # perform the login
-        response = await CoxDataUsage.async_call_api(self._hass, session, LOGIN_API_URL, data)
+        response = cox_login(self._username, self._password)
         if response is None:
             return False
 
@@ -164,12 +157,61 @@ class CoxDataUsage(Entity):
 
         return True
 
+    def cox_login(self, username, password):
+
+        SCOPE = "openid%20internal" #okta-login.js from cox login page
+        HOST_NAME = "www.cox.com" #okta-login.js
+        REDIRECT_URI = f"https://{HOST_NAME}/authres/code" #okta-login.js
+        AJAX_URL = f"https://{HOST_NAME}/authres/getNonce?onsuccess=" #okta-login.js
+        BASE_URL = 'https://cci-res.okta.com/' #okta-login.js
+        CLIENT_ID = '0oa1iranfsovqR6MG0h8' #okta-login.js
+        ISSUER = 'https://cci-res.okta.com/oauth2/aus1jbzlxq0hRR6jG0h8' #okta-login.js
+        ON_SUCCESS_URL = "https%3A%2F%2Fwww.cox.com%2Fresaccount%2Fhome.html" #okta-login.js
+        onSuccessUrl = ON_SUCCESS_URL
+        nonceURL="https://www.cox.com/authres/getNonce?onsuccess=https%3A%2F%2Fwww.cox.com%2Fresimyaccount%2Fhome.html"
+
+
+        data = {
+            "username": username,
+            "password": password,
+            "options": {
+                "multiOptionalFactorEnroll": False,
+                "warnBeforePasswordExpired": False
+            }
+        }
+
+        headers = {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+        }
+
+        response = await CoxDataUsage.async_call_api(self._hass, self.session, "{AJAX_URL}{ON_SUCCESS_URL}")
+        if response is None:
+            return None
+
+        nonceVal = response.text
+
+        response = await CoxDataUsage.async_call_api(self._hass, self.session, f"{BASE_URL}/api/v1/authn", data)
+        if response is None:
+            return None
+
+        sessionToken = response.json()['sessionToken']
+
+        url= f"{ISSUER}/v1/authorize?client_id={CLIENT_ID}&nonce={nonceVal}&redirect_uri={REDIRECT_URI}&response_mode=query&response_type=code&sessionToken={sessionToken}&state=https%253A%252F%252Fwww.cox.com%252Fwebapi%252Fcdncache%252Fcookieset%253Fresource%253Dhttps%253A%252F%252Fwww.cox.com%252Fresaccount%252Fhome.cox&scope={SCOPE}"
+
+        response = await CoxDataUsage.async_call_api(self._hass, self.session, url)
+        if response is None:
+            return None
+
+        return response
+
+
     @staticmethod
     async def async_call_api(hass, session, url, data=None):
         """Calls the given api and returns the response data"""
         try:
             if data is None:
-                response = await hass.loop.run_in_executor(None, partial(session.get, url, timeout=10))
+                response = await hass.loop.run_in_executor(None, partial(session.get, url, timeout=10,allow_redirects=True))
             else:
                 response = await hass.loop.run_in_executor(None, partial(session.post, url, data=data, timeout=10))
         except (requests.exceptions.RequestException, ValueError):
