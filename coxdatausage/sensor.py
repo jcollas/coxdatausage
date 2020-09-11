@@ -122,7 +122,7 @@ class CoxDataUsage(Entity):
         self.session = session
 
         # perform the login
-        response = cox_login(self._username, self._password)
+        response = self.cox_login(self._username, self._password)
         if response is None:
             return False
 
@@ -157,7 +157,7 @@ class CoxDataUsage(Entity):
 
         return True
 
-    def cox_login(self, username, password):
+    async def cox_login(self, username, password):
 
         SCOPE = "openid%20internal" #okta-login.js from cox login page
         HOST_NAME = "www.cox.com" #okta-login.js
