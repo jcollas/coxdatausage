@@ -31,7 +31,7 @@ from homeassistant.util import Throttle
 
 _LOGGER = logging.getLogger(__name__)
 
-LOGIN_API_URL = 'https://idm.east.cox.net/idm/coxnetlogin'
+#LOGIN_API_URL = 'https://idm.east.cox.net/idm/coxnetlogin'
 DATA_USAGE_URL = 'https://www.cox.com/internet/mydatausage.cox'
 
 DEFAULT_ICON = 'mdi:chart-line'
@@ -142,7 +142,7 @@ class CoxDataUsage(Entity):
         days_left = float(response_object['dumDaysLeft'])
         utilization = response_object['dumUtilization']
         current_avg_gb = round((usage/max((days_in_month - days_left), 1)), 2)
-        remaining_avg_gb = round((limit - usage) / days_left, 2)
+        remaining_avg_gb = round((limit - usage) / max(days_left, 1), 2)
 
         self._state = usage
         self._state_attributes = {
@@ -191,7 +191,7 @@ class CoxDataUsage(Entity):
 
         nonceVal = response.text
 
-        response = await CoxDataUsage.async_call_api(self._hass, self.session, f"{BASE_URL}api/v1/authn", data=json.dumps(data), headers=headers)
+        response = await CoxDataUsage.async_call_api(self._hass, self.session, f"{BASE_URL}api/v1/authn", json=data, headers=headers)
         if response is None:
             return None
 
@@ -209,11 +209,13 @@ class CoxDataUsage(Entity):
     @staticmethod
     async def async_call_api(hass, session, url, **kwargs):
         """Calls the given api and returns the response data"""
+        kwargs['timeout'] = 10
         try:
-            if kwargs.get("data") is None:
-                response = await hass.loop.run_in_executor(None, partial(session.get, url, timeout=10, **kwargs))
-            else:
-                response = await hass.loop.run_in_executor(None, partial(session.post, url, timeout=10, **kwargs))
+            req_func = session.get
+            if kwargs.get("data") or kwargs.get("json"):
+                req_func = session.post
+            partial_req = partial(req_func, url, **kwargs)
+            response = await hass.loop.run_in_executor(None, partial_req)
         except (requests.exceptions.RequestException, ValueError):
             _LOGGER.warning(
                 'Request failed for url %s',
@@ -224,6 +226,7 @@ class CoxDataUsage(Entity):
             _LOGGER.warning(
                 'Invalid status_code %s from url %s',
                 response.status_code, url)
+            _LOGGER.warning(response.text)
             return None
 
         return response
