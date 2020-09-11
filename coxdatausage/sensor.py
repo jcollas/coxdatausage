@@ -191,7 +191,7 @@ class CoxDataUsage(Entity):
 
         nonceVal = response.text
 
-        response = await CoxDataUsage.async_call_api(self._hass, self.session, f"{BASE_URL}api/v1/authn", data=data, headers=headers)
+        response = await CoxDataUsage.async_call_api(self._hass, self.session, f"{BASE_URL}api/v1/authn", data=json.dumps(data), headers=headers)
         if response is None:
             return None
 
@@ -210,7 +210,7 @@ class CoxDataUsage(Entity):
     async def async_call_api(hass, session, url, **kwargs):
         """Calls the given api and returns the response data"""
         try:
-            if kwargs.data is None:
+            if kwargs.get("data") is None:
                 response = await hass.loop.run_in_executor(None, partial(session.get, url, timeout=10, **kwargs))
             else:
                 response = await hass.loop.run_in_executor(None, partial(session.post, url, timeout=10, **kwargs))
