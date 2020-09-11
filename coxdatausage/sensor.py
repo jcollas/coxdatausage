@@ -202,7 +202,7 @@ class CoxDataUsage(Entity):
             'response_mode': 'query',
             'response_type': 'code',
             'sessionToken': sessionToken,
-            'state': 'https%3A%2F%2Fwww.cox.com%2Fwebapi%2Fcdncache%2Fcookieset%3Fresource%3Dhttps%3A%2F%2Fwww.cox.com%2Fresaccount%2Fhome.cox'
+            'state': 'https%3A%2F%2Fwww.cox.com%2Fwebapi%2Fcdncache%2Fcookieset%3Fresource%3Dhttps%3A%2F%2Fwww.cox.com%2Fresaccount%2Fhome.cox',
             'scope': SCOPE
         }
 

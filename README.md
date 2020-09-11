@@ -1,7 +1,9 @@
-# This has been archived and no longer functions as designed. Needs the API updated.
 
-## Custom Component Cox Data Usage
-This is a custom_component for Home Assistant to create a sensor for data usage on Cox
+# Custom Component Cox Data Usage
+
+This is a custom_component for Home Assistant to create a sensor for data usage on Cox.
+
+This has been updated to work properly with the new Cox Okta authentication API.
 
 ### Installation
 
