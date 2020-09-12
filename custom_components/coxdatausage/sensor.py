@@ -120,7 +120,7 @@ class CoxDataUsage(Entity):
         self.session = session
 
         # perform the login
-        response = await cox_login(self._hass, session, elf._username, self._password)
+        response = await cox_login(self._hass, session, self._username, self._password)
         if response is None:
             return False
 
