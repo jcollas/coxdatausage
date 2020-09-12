@@ -17,7 +17,6 @@ import datetime as dt
 import json
 import logging
 import re
-from functools import partial
 
 import requests
 import voluptuous as vol
@@ -29,9 +28,10 @@ from homeassistant.const import STATE_UNKNOWN
 from homeassistant.helpers.entity import Entity
 from homeassistant.util import Throttle
 
+from . import cox_login, async_call_api
+
 _LOGGER = logging.getLogger(__name__)
 
-#LOGIN_API_URL = 'https://idm.east.cox.net/idm/coxnetlogin'
 DATA_USAGE_URL = 'https://www.cox.com/internet/mydatausage.cox'
 
 DEFAULT_ICON = 'mdi:chart-line'
@@ -52,7 +52,6 @@ ATTR_UTILIZATION = 'Percentage Used'
 ATTR_CURRENT_AVG_GB = 'Average GB Used Per Day'
 ATTR_REMAINING_AVG_GB = 'Average GB Remaining Per Day'
 
-
 async def async_setup_platform(hass, config, async_add_devices, discovery_info=None):
     """Set up the sensor."""
     _LOGGER.debug('Cox: async_setup_platform')
@@ -68,7 +67,6 @@ async def async_setup_platform(hass, config, async_add_devices, discovery_info=N
         return
 
     async_add_devices([device])
-
 
 class CoxDataUsage(Entity):
     """Representation of the sensor."""
@@ -122,14 +120,15 @@ class CoxDataUsage(Entity):
         self.session = session
 
         # perform the login
-        response = await self.cox_login(self._username, self._password)
+        response = await cox_login(self._hass, session, elf._username, self._password)
         if response is None:
             return False
 
         # get the data usage
-        response = await CoxDataUsage.async_call_api(self._hass, session, DATA_USAGE_URL)
+        response = await async_call_api(self._hass, session, DATA_USAGE_URL)
         if response is None:
             return False
+        
         script_var = re.findall(r'var.utag_data={\s*(.*?)}\n', response.text, re.DOTALL | re.MULTILINE)
         json_str = "{" + script_var[0] + "}"
         response_object = json.loads(json_str)
@@ -156,85 +155,3 @@ class CoxDataUsage(Entity):
         }
 
         return True
-
-    async def cox_login(self, username, password):
-
-        SCOPE = "openid internal" #okta-login.js from cox login page
-        HOST_NAME = "www.cox.com" #okta-login.js
-        REDIRECT_URI = f"https://{HOST_NAME}/authres/code" #okta-login.js
-        AJAX_URL = f"https://{HOST_NAME}/authres/getNonce?onsuccess=" #okta-login.js
-        BASE_URL = 'https://cci-res.okta.com/' #okta-login.js
-        CLIENT_ID = '0oa1iranfsovqR6MG0h8' #okta-login.js
-        ISSUER = f"{BASE_URL}/oauth2/aus1jbzlxq0hRR6jG0h8" #okta-login.js
-        ON_SUCCESS_URL = "https%3A%2F%2Fwww.cox.com%2Fresaccount%2Fhome.html" #okta-login.js
-
-
-        data = {
-            "username": username,
-            "password": password,
-            "options": {
-                "multiOptionalFactorEnroll": False,
-                "warnBeforePasswordExpired": False
-            }
-        }
-
-        headers = {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
-        }
-
-        response = await CoxDataUsage.async_call_api(self._hass, self.session, f"{AJAX_URL}{ON_SUCCESS_URL}")
-        if response is None:
-            return None
-
-        nonceVal = response.text
-
-        response = await CoxDataUsage.async_call_api(self._hass, self.session, f"{BASE_URL}api/v1/authn", json=data, headers=headers)
-        if response is None:
-            return None
-
-        sessionToken = response.json()['sessionToken']
-
-        params = {
-            'client_id': CLIENT_ID,
-            'nonce': nonceVal,
-            'redirect_uri': REDIRECT_URI,
-            'response_mode': 'query',
-            'response_type': 'code',
-            'sessionToken': sessionToken,
-            'state': 'https%3A%2F%2Fwww.cox.com%2Fwebapi%2Fcdncache%2Fcookieset%3Fresource%3Dhttps%3A%2F%2Fwww.cox.com%2Fresaccount%2Fhome.cox',
-            'scope': SCOPE
-        }
-
-        response = await CoxDataUsage.async_call_api(self._hass, self.session, f"{ISSUER}/v1/authorize", params=params, allow_redirects=True)
-        if response is None:
-            return None
-
-        return response
-
-
-    @staticmethod
-    async def async_call_api(hass, session, url, **kwargs):
-        """Calls the given api and returns the response data"""
-        kwargs['timeout'] = 10
-        kwargs['verify'] = True
-        try:
-            req_func = session.get
-            if kwargs.get("data") or kwargs.get("json"):
-                req_func = session.post
-            partial_req = partial(req_func, url, **kwargs)
-            response = await hass.loop.run_in_executor(None, partial_req)
-        except (requests.exceptions.RequestException, ValueError):
-            _LOGGER.warning(
-                'Request failed for url %s',
-                url)
-            return None
-
-        if response.status_code != 200:
-            _LOGGER.warning(
-                'Invalid status_code %s from url %s',
-                response.status_code, url)
-            _LOGGER.warning(response.text)
-            return None
-
-        return response
