@@ -217,6 +217,7 @@ class CoxDataUsage(Entity):
     async def async_call_api(hass, session, url, **kwargs):
         """Calls the given api and returns the response data"""
         kwargs['timeout'] = 10
+        kwargs['verify'] = True
         try:
             req_func = session.get
             if kwargs.get("data") or kwargs.get("json"):
