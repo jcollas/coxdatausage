@@ -79,8 +79,15 @@ class CoxDataUsage(Entity):
         self._username = username
         self._password = password
 
+        self._identifier = f"cox_{username}"
+
         self._state = STATE_UNKNOWN
         self._state_attributes = None
+
+    @property
+    def unique_id(self):
+        """Return a unique ID to use for this sensor."""
+        return f"sn_{self._identifier}"
 
     @property
     def name(self):

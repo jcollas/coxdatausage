@@ -11,7 +11,7 @@ Copy the folder `coxdatausage/` folder to `<config_dir>/custom_components/`.
 
 Add the following to your `configuration.yaml` file:
 ```yaml
-- platform: Cox
+- platform: coxdatausage
   name: Cox Data Usage
   username: !secret cox_username
   password: !secret cox_password
