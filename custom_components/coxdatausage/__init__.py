@@ -3,6 +3,7 @@
 import logging
 from functools import partial
 
+import urllib.parse
 import requests
 
 _LOGGER = logging.getLogger(__name__)
@@ -10,13 +11,15 @@ _LOGGER = logging.getLogger(__name__)
 SCOPE = "openid internal" #okta-login.js from cox login page
 HOST_NAME = "www.cox.com" #okta-login.js
 REDIRECT_URI = f"https://{HOST_NAME}/authres/code" #okta-login.js
-AJAX_URL = f"https://{HOST_NAME}/authres/getNonce?onsuccess=" #okta-login.js
+NONCE_URL = f"https://{HOST_NAME}/authres/getNonce" #okta-login.js
 BASE_URL = 'https://cci-res.okta.com/' #okta-login.js
 CLIENT_ID = '0oa1iranfsovqR6MG0h8' #okta-login.js
 ISSUER = f"{BASE_URL}/oauth2/aus1jbzlxq0hRR6jG0h8" #okta-login.js
-ON_SUCCESS_URL = "https%3A%2F%2Fwww.cox.com%2Fresaccount%2Fhome.html" #okta-login.js
+ON_SUCCESS_URL = "https://www.cox.com/resaccount/home.html" #okta-login.js
 
-async def cox_login(hass, session, username, password):
+async def cox_login(hass, session, username, password, onsuccess=ON_SUCCESS_URL):
+
+    onsuccess = urllib.parse.quote(onsuccess, safe='')
 
     data = {
         "username": username,
@@ -32,7 +35,7 @@ async def cox_login(hass, session, username, password):
         'Content-Type': 'application/json'
     }
 
-    response = await async_call_api(hass, session, f"{AJAX_URL}{ON_SUCCESS_URL}")
+    response = await async_call_api(hass, session, NONCE_URL)
     if response is None:
         return None
 
@@ -51,7 +54,7 @@ async def cox_login(hass, session, username, password):
         'response_mode': 'query',
         'response_type': 'code',
         'sessionToken': sessionToken,
-        'state': 'https%3A%2F%2Fwww.cox.com%2Fwebapi%2Fcdncache%2Fcookieset%3Fresource%3Dhttps%3A%2F%2Fwww.cox.com%2Fresaccount%2Fhome.cox',
+        'state': onsuccess,
         'scope': SCOPE
     }
 
@@ -64,7 +67,7 @@ async def cox_login(hass, session, username, password):
 async def async_call_api(hass, session, url, **kwargs):
     """Calls the given api and returns the response data"""
     kwargs['timeout'] = 10
-    kwargs['verify'] = True
+
     try:
         req_func = session.get
         if kwargs.get("data") or kwargs.get("json"):

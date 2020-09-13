@@ -22,7 +22,7 @@ Attribute | Description
 Used data | Amount of data used in GB
 Total data | Total amount of data plan in GB
 Days this month | Number of days in the plan cycle
-Days Left in Cycle | Number of days left in the plany cycle
+Days Left in Cycle | Number of days left in the plan cycle
 Percentage Used | Percentage of data used 
 Average GB Used Per Day | Average per day
 Average GB Remaining Per Day | Average remaining per day

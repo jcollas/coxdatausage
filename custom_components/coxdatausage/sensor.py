@@ -122,19 +122,18 @@ class CoxDataUsage(Entity):
         self._state_attributes = {}
 
         session = requests.session()
-        session.verify = False
-
-        self.session = session
+        session.verify = True
 
         # perform the login
-        response = await cox_login(self._hass, session, self._username, self._password)
+        response = await cox_login(self._hass, session, self._username, self._password, onsuccess=DATA_USAGE_URL)
         if response is None:
             return False
 
         # get the data usage
-        response = await async_call_api(self._hass, session, DATA_USAGE_URL)
-        if response is None:
-            return False
+
+        # response = await async_call_api(self._hass, session, DATA_USAGE_URL)
+        # if response is None:
+        #     return False
         
         script_var = re.findall(r'var.utag_data={\s*(.*?)}\n', response.text, re.DOTALL | re.MULTILINE)
         json_str = "{" + script_var[0] + "}"
